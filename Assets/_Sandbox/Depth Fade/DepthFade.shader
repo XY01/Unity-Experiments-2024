@@ -1,58 +1,93 @@
-Shader "Unlit/DepthFade"
+// This shader fills the mesh shape with a color that a user can change using the
+// Inspector window on a Material.
+Shader "Example/URPDepthFade"
 {
+    // The _BaseColor variable is visible in the Material's Inspector, as a field
+    // called Base Color. You can use it to select a custom color. This variable
+    // has the default value (1, 1, 1, 1).
     Properties
     {
-        _MainTex ("Texture", 2D) = "white" {}
+        [MainColor] _BaseColor("Base Color", Color) = (1, 1, 1, 1)
     }
+
     SubShader
     {
-        Tags { "RenderType"="Tranparent" }
-        LOD 100
+        Tags { "RenderType" = "Opaque" "RenderPipeline" = "UniversalPipeline" }
 
         Pass
         {
-            CGPROGRAM
+            HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-            // make fog work
-            #pragma multi_compile_fog
 
-            #include "UnityCG.cginc"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            // The DeclareDepthTexture.hlsl file contains utilities for sampling the Camera
+            // depth texture.
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
 
-            struct appdata
+            struct Attributes
             {
-                float4 vertex : POSITION;
-                float2 uv : TEXCOORD0;
+                float4 positionOS   : POSITION;
             };
 
-            struct v2f
+            struct Varyings
             {
-                float2 uv : TEXCOORD0;
-                UNITY_FOG_COORDS(1)
-                float4 vertex : SV_POSITION;
+                // Homogeneous Clip Space
+                float4 positionHCS  : SV_POSITION;
+                // View Space
+                float3 positionVS  : TEXCOORD0;
             };
 
-            sampler2D _MainTex;
-            float4 _MainTex_ST;
+            // To make the Unity shader SRP Batcher compatible, declare all
+            // properties related to a Material in a a single CBUFFER block with
+            // the name UnityPerMaterial.
+            CBUFFER_START(UnityPerMaterial)
+            // The following line declares the _BaseColor variable, so that you
+            // can use it in the fragment shader.
+            half4 _BaseColor;
+            CBUFFER_END
 
-            v2f vert (appdata v)
+            Varyings vert(Attributes IN)
             {
-                v2f o;
-                o.vertex = UnityObjectToClipPos(v.vertex);
-                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-                UNITY_TRANSFER_FOG(o,o.vertex);
-                return o;
+                Varyings OUT;
+                OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);
+                float3 world = TransformObjectToWorld(IN.positionOS.xyz);
+                OUT.positionVS = TransformWorldToView(world);
+                return OUT;
             }
 
-            fixed4 frag (v2f i) : SV_Target
+            half4 frag(Varyings IN) : SV_Target
             {
-                // sample the texture
-                fixed4 col = tex2D(_MainTex, i.uv);
-                // apply fog
-                UNITY_APPLY_FOG(i.fogCoord, col);
-                return col;
+                // To calculate the UV coordinates for sampling the depth buffer,
+                // divide the pixel location by the render target resolution
+                // _ScaledScreenParams.
+                float2 UV = IN.positionHCS.xy / _ScaledScreenParams.xy;
+
+                // Sample the depth from the Camera depth texture.
+                real rawDepth = SampleSceneDepth(UV);
+                
+                // Eye depth is in world units from the camera position plane (Not near plane)
+                float sceneEyeDepth = LinearEyeDepth(rawDepth, _ZBufferParams);
+
+                // Reconstruct the world space positions from depth.
+                float3 worldPos = ComputeWorldSpacePosition(UV, rawDepth, UNITY_MATRIX_I_VP);
+
+
+                
+                float fragDepthFrac = frac(-IN.positionVS.z);
+                float sceneDepthFrac = frac(sceneEyeDepth);
+                float sceneWorldPosDepthFrac = frac(worldPos.z);
+
+                float depthDiff = saturate(abs(-IN.positionVS.z - sceneEyeDepth));
+                
+                //fragDepthFrac = pow(fragDepthFrac,2.2);
+                //float4 col = float4(sceneDepthFrac, sceneWorldPosDepthFrac, fragDepthFrac, 1);
+                float4 col = float4(depthDiff, depthDiff, depthDiff, 1);
+                
+                // Returning the _BaseColor value.
+                return col;//_BaseColor;
             }
-            ENDCG
+            ENDHLSL
         }
     }
 }
