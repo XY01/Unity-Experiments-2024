@@ -267,7 +267,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
-  m_BackGroundColor: {r: 0, g: 0, b: 0, a: 1}
+  m_BackGroundColor: {r: 0.9433962, g: 0.9433962, b: 0.9433962, a: 1}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -290,7 +290,7 @@ Camera:
     height: 1
   near clip plane: 0.3
   far clip plane: 1000
-  field of view: 80
+  field of view: 50
   orthographic: 0
   orthographic size: 5
   m_Depth: 0
@@ -317,7 +317,7 @@ Transform:
   m_GameObject: {fileID: 247446445}
   serializedVersion: 2
   m_LocalRotation: {x: 0.31874272, y: -0.4315991, z: 0.16628064, w: 0.8273307}
-  m_LocalPosition: {x: 1.54, y: 1.1, z: -3.32}
+  m_LocalPosition: {x: 1.25, y: 1.79, z: -0.92}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -341,7 +341,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &295527870
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -404,7 +404,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
-  m_BackGroundColor: {r: 0, g: 0, b: 0, a: 1}
+  m_BackGroundColor: {r: 0.8679245, g: 0.85564256, b: 0.85564256, a: 1}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -427,7 +427,7 @@ Camera:
     height: 1
   near clip plane: 0.3
   far clip plane: 1000
-  field of view: 60
+  field of view: 78
   orthographic: 0
   orthographic size: 5
   m_Depth: 0
@@ -454,7 +454,7 @@ Transform:
   m_GameObject: {fileID: 295527869}
   serializedVersion: 2
   m_LocalRotation: {x: 0.70710677, y: 0, z: 0, w: 0.70710677}
-  m_LocalPosition: {x: -1.89, y: 2.63, z: -2.83}
+  m_LocalPosition: {x: -2.86, y: 1.61, z: -0.2}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -538,30 +538,33 @@ VisualEffect:
   m_PropertySheet:
     m_Float:
       m_Array:
-      - m_Value: 3
+      - m_Value: 2
         m_Name: Size Scalar
         m_Overridden: 1
       - m_Value: 0
         m_Name: Focus Dist
         m_Overridden: 1
-      - m_Value: 0.2
+      - m_Value: 0.1
         m_Name: Noise Amp 0
         m_Overridden: 1
-      - m_Value: 1
+      - m_Value: 0.4
         m_Name: Noise Amp 1
         m_Overridden: 1
-      - m_Value: 1.5
+      - m_Value: 1
         m_Name: MaxDistFromSource
         m_Overridden: 1
-      - m_Value: 0.4
+      - m_Value: 0.5
         m_Name: Noise Freq 1
         m_Overridden: 1
-      - m_Value: 0.41
+      - m_Value: 0.5
         m_Name: Noise Freq 0
+        m_Overridden: 1
+      - m_Value: 2
+        m_Name: Rand Pos Offset
         m_Overridden: 1
     m_Vector2f:
       m_Array:
-      - m_Value: {x: 19.2, y: 12}
+      - m_Value: {x: 12, y: 12}
         m_Name: WorldSize
         m_Overridden: 1
       - m_Value: {x: 1920, y: 1200}
@@ -572,13 +575,25 @@ VisualEffect:
       - m_Value: {x: 0, y: -3, z: 0}
         m_Name: Focus
         m_Overridden: 1
-      - m_Value: {x: 0.4, y: 0, z: -0.3}
+      - m_Value: {x: -0.4, y: 0, z: 0.3}
         m_Name: PosOffset
+        m_Overridden: 1
+      - m_Value: {x: 1920, y: 1200, z: 1}
+        m_Name: Resolution3D
+        m_Overridden: 1
+      - m_Value: {x: 1920, y: 1200, z: 1}
+        m_Name: Resolution 3D
+        m_Overridden: 1
+      - m_Value: {x: 10, y: 10, z: 1}
+        m_Name: World Size 3D
         m_Overridden: 1
     m_Vector4f:
       m_Array: []
     m_Uint:
-      m_Array: []
+      m_Array:
+      - m_Value: 1
+        m_Name: debug
+        m_Overridden: 1
     m_Int:
       m_Array:
       - m_Value: 1
@@ -592,7 +607,7 @@ VisualEffect:
       m_Array: []
     m_NamedObject:
       m_Array:
-      - m_Value: {fileID: 2800000, guid: 74b8d5ef948562e43b68918ec77b53ca, type: 3}
+      - m_Value: {fileID: 2800000, guid: 0a75894e71bcc384aab473c8cdb35ced, type: 3}
         m_Name: Texture
         m_Overridden: 1
       - m_Value: {fileID: 2800000, guid: b3c2fc38b9d9bf84a9a75629795eac48, type: 3}
@@ -608,13 +623,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1123659710}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.75756496, y: 0, z: 0, w: 0.6527598}
-  m_LocalPosition: {x: 2.15, y: -0.92, z: 0.66}
+  m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 98.5, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 90, y: 0, z: 0}
 --- !u!1 &1141573139
 GameObject:
   m_ObjectHideFlags: 0
@@ -965,7 +980,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &2045015227
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1028,7 +1043,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
-  m_BackGroundColor: {r: 0, g: 0, b: 0, a: 1}
+  m_BackGroundColor: {r: 0.8851015, g: 0.9301161, b: 0.9622642, a: 1}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -1051,7 +1066,7 @@ Camera:
     height: 1
   near clip plane: 0.3
   far clip plane: 1000
-  field of view: 40
+  field of view: 57
   orthographic: 0
   orthographic size: 5
   m_Depth: 0
@@ -1077,13 +1092,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2045015226}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.30580103, y: 0.105236076, z: -0.034030892, w: 0.94564956}
-  m_LocalPosition: {x: -1.31, y: 0.43, z: 0.38}
+  m_LocalRotation: {x: 0.5254908, y: 0.093877286, z: -0.058478944, w: 0.8435797}
+  m_LocalPosition: {x: -0.31, y: 1.2, z: -1.84}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2114915891}
-  m_LocalEulerAnglesHint: {x: 35.84, y: 12.7, z: 0}
+  m_LocalEulerAnglesHint: {x: 63.84, y: 12.7, z: 0}
 --- !u!1 &2114915890
 GameObject:
   m_ObjectHideFlags: 0
