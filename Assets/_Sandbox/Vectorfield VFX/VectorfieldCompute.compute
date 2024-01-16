@@ -1,0 +1,31 @@
+// VectorFieldComputeShader.compute
+
+#pragma kernel CSMain
+
+// The number of threads per group in each dimension
+#define THREAD_X 8
+#define THREAD_Y 8
+#define THREAD_Z 8
+
+// The buffer to write the vector field to
+RWStructuredBuffer<float4> VectorfieldBuffer;
+
+// The dimensions of the vector field
+int3 dimensions;
+
+[numthreads(THREAD_X, THREAD_Y, THREAD_Z)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    // Ensure we do not write outside the bounds of the buffer
+    uint index = id.x + id.y * dimensions.x + id.z * dimensions.x * dimensions.y;
+    if (index >= dimensions.x * dimensions.y * dimensions.z)
+    {
+        return;
+    }
+
+    float3 position = float3(id.x, id.y, id.z);
+    float3 vec = float3(0, 1, 0); // Replace with your vector field logic
+
+    // Write the result to the buffer
+    VectorfieldBuffer[index] = float4(vec, 0);
+}
