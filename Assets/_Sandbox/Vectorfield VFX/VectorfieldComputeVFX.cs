@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.VFX;
 using Random = UnityEngine.Random;
@@ -9,12 +10,14 @@ public class VectorfieldComputeVFX : MonoBehaviour
     public ComputeShader vectorFieldShader;
     public VisualEffect visualEffect;
     private GraphicsBuffer vectorFieldBuffer;
-    private int kernelHandle;
+    private int intiHandle;
 
     // Vector field dimensions
     public int width = 256;
     public int height = 256;
     public int depth = 256;
+
+    private int3 _threadCount;
 
     void Start() 
     {
@@ -25,7 +28,7 @@ public class VectorfieldComputeVFX : MonoBehaviour
     void SetupShader()
     {
         // Find the kernel
-        kernelHandle = vectorFieldShader.FindKernel("CSMain");
+        intiHandle = vectorFieldShader.FindKernel("InitVectorfield");
 
         // Create a GraphicsBuffer
         int totalSize = width * height * depth;
@@ -34,30 +37,34 @@ public class VectorfieldComputeVFX : MonoBehaviour
         Vector4[] vectorFieldData = new Vector4[totalSize];
         for(int i = 0; i < totalSize; i++)
         {
-            vectorFieldData[i] = new Vector4(Mathf.Sin(i * .1f), Mathf.Cos(i * .31f), 0);
+            vectorFieldData[i] = new Vector4(0, 1, 0);
         }
         vectorFieldBuffer.SetData(vectorFieldData);
         
         // Set the buffer and dimensions in the compute shader
-        vectorFieldShader.SetBuffer(kernelHandle, "VectorfieldBuffer", vectorFieldBuffer);
-        vectorFieldShader.SetInts("dimensions", new int[] { width, height, depth });
+        vectorFieldShader.SetBuffer(intiHandle, "VectorfieldBuffer", vectorFieldBuffer);
+        vectorFieldShader.SetInts("Dimensions", new int[] { width, height, depth });
         //vectorFieldShader.SetVector("Dimensions", new Vector3( width, height, depth ));
 
+        visualEffect.Stop();
+        visualEffect.SetVector3("Dimensions", new Vector3( width, height, depth ));
         // Set the buffer for the visual effect
         visualEffect.SetGraphicsBuffer("VectorfieldBuffer", vectorFieldBuffer);
+        visualEffect.Play();
+
+        _threadCount = new int3(
+            Mathf.CeilToInt(width / 8f),
+            Mathf.CeilToInt(height / 8f),
+            Mathf.CeilToInt(depth / 8f));
         
-        Dispatch();
+        Debug.Log($"Thread count: {_threadCount}");
     }
 
     [ContextMenu("Dispatch")]
     private void Dispatch()
     {
-            // Dispatch the compute shader
-            vectorFieldShader.Dispatch(kernelHandle,
-                Mathf.Max(width / 8, 1),
-                Mathf.Max(height / 8, 1),
-                Mathf.Max(depth / 8, 1));
-        
+        // Dispatch the compute shader
+        vectorFieldShader.Dispatch(intiHandle,_threadCount.x, _threadCount.y, _threadCount.z);
     }
 
     void OnDestroy() {

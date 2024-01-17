@@ -319,8 +319,11 @@ VisualEffect:
       m_Array: []
     m_Vector3f:
       m_Array:
-      - m_Value: {x: 10, y: 0.01, z: 10}
+      - m_Value: {x: 4, y: 3, z: 6}
         m_Name: World Size 3D
+        m_Overridden: 1
+      - m_Value: {x: 8, y: 8, z: 8}
+        m_Name: Dimensions
         m_Overridden: 1
     m_Vector4f:
       m_Array: []
@@ -367,9 +370,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   vectorFieldShader: {fileID: 7200000, guid: 0ee317e4e2784384396e98a90c12f824, type: 3}
   visualEffect: {fileID: 799013348}
-  width: 30
-  height: 1
-  depth: 30
+  width: 8
+  height: 8
+  depth: 8
 --- !u!1 &961739749
 GameObject:
   m_ObjectHideFlags: 0
@@ -500,13 +503,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 961739749}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: -10}
+  m_LocalRotation: {x: 0.45583212, y: -0, z: -0, w: 0.8900658}
+  m_LocalPosition: {x: 0, y: 5.33, z: -5.8}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 54.237, y: 0, z: 0}
 --- !u!1 &1160234425
 GameObject:
   m_ObjectHideFlags: 0
@@ -574,7 +577,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!64 &1553015161
 MeshCollider:
   m_ObjectHideFlags: 0
