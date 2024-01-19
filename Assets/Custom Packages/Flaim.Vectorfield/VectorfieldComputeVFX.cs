@@ -13,9 +13,10 @@ namespace Flaim.Compute
     {
         [SerializeField] private ComputeShader VectorFieldShader;
         [SerializeField] private VisualEffect VisualEffect;
+        [SerializeField] private VisualEffect VisualEffectParticles;
       
         [Header("World Dimensions")]
-        [SerializeField] private Vector3 WorldDimensions = new Vector3(4,2, 4);
+        [SerializeField] private Vector3 BoundsSize = new Vector3(4,2, 4);
         [SerializeField] private float CellSize = .15f;
 
         [Header("Influence")]
@@ -47,9 +48,9 @@ namespace Flaim.Compute
         private void OnValidate()
         {
             // Vector field dimensions
-            _width = WorldDimensions.x > 0 ? Mathf.FloorToInt(WorldDimensions.x / CellSize) : 1;
-            _height = WorldDimensions.y > 0 ? Mathf.FloorToInt(WorldDimensions.y / CellSize) : 1;
-            _depth = WorldDimensions.z > 0 ? Mathf.FloorToInt(WorldDimensions.z / CellSize) : 1;
+            _width = BoundsSize.x > 0 ? Mathf.FloorToInt(BoundsSize.x / CellSize) : 1;
+            _height = BoundsSize.y > 0 ? Mathf.FloorToInt(BoundsSize.y / CellSize) : 1;
+            _depth = BoundsSize.z > 0 ? Mathf.FloorToInt(BoundsSize.z / CellSize) : 1;
         }
 
         [ContextMenu("Initialize")]
@@ -76,11 +77,11 @@ namespace Flaim.Compute
           
             // Set constants
             VectorFieldShader.SetInts("GridDimensions", new int[] { _width, _height, _depth });
-            VectorFieldShader.SetVector("BoundsMin", transform.position - WorldDimensions * .5f);
-            VectorFieldShader.SetVector("BoundsSize", WorldDimensions);
+            VectorFieldShader.SetVector("BoundsMin", transform.position - BoundsSize * .5f);
+            VectorFieldShader.SetVector("BoundsSize", BoundsSize);
             
             
-            VectorFieldShader.SetFloat("CellSize", WorldDimensions.x / (float)_width);
+            VectorFieldShader.SetFloat("CellSize", BoundsSize.x / (float)_width);
             //vectorFieldShader.SetVector("Dimensions", new Vector3( width, height, depth ));
             // Set thread counts
             _threadCount = new int3(
@@ -91,9 +92,13 @@ namespace Flaim.Compute
             // ----------------- Visual Effect -----------------
             //
             VisualEffect.SetVector3("GridDimensions", new Vector3(_width, _height, _depth));
-            VisualEffect.SetVector3("WorldDimensions", WorldDimensions);
+            VisualEffect.SetVector3("BoundsSize", BoundsSize);
+            VisualEffectParticles.SetVector3("GridDimensions", new Vector3(_width, _height, _depth));
+            VisualEffectParticles.SetVector3("BoundsSize", BoundsSize);
+            
             // Set the buffer for the visual effect
             VisualEffect.SetGraphicsBuffer("VectorfieldBuffer", _vectorFieldBuffer);
+            VisualEffectParticles.SetGraphicsBuffer("VectorfieldBuffer", _vectorFieldBuffer);
             VisualEffect.Stop();
             VisualEffect.Reinit();
             VisualEffect.Play();
@@ -128,11 +133,11 @@ namespace Flaim.Compute
         Vector3 WorldToLocalPosition(Vector3 worldPosition)
         {
             Vector3 local = transform.InverseTransformPoint(InfluenceTransform.transform.position);
-            local += WorldDimensions * .5f;
+            local += BoundsSize * .5f;
             Vector3 normalized = new Vector3(
-                local.x / WorldDimensions.x,
-                local.y / WorldDimensions.y,
-                local.z / WorldDimensions.z);
+                local.x / BoundsSize.x,
+                local.y / BoundsSize.y,
+                local.z / BoundsSize.z);
 
             return normalized;
         }
@@ -140,7 +145,7 @@ namespace Flaim.Compute
         Vector3 WorldToGridPos(Vector3 worldPosition)
         {
             Vector3 local = transform.InverseTransformPoint(InfluenceTransform.transform.position);
-            local += WorldDimensions * .5f;
+            local += BoundsSize * .5f;
             local.x = Mathf.Floor(local.x);
             local.y = Mathf.Floor(local.y);
             local.z = Mathf.Floor(local.z);
@@ -161,7 +166,7 @@ namespace Flaim.Compute
         private void OnDrawGizmos()
         {
             // Draw bounds
-            Gizmos.DrawWireCube(transform.position, WorldDimensions);
+            Gizmos.DrawWireCube(transform.position, BoundsSize);
             
             // Draw cell centers
             if(!DrawVectorPositions)
@@ -174,7 +179,7 @@ namespace Flaim.Compute
                 {
                     for (int z = 0; z < _depth; z++)
                     {
-                        Vector3 pos = transform.position + new Vector3(x, y, z) * CellSize - (WorldDimensions * .5f) + (Vector3.one * CellSize * .5f);
+                        Vector3 pos = transform.position + new Vector3(x, y, z) * CellSize - (BoundsSize * .5f) + (Vector3.one * CellSize * .5f);
                         Gizmos.DrawLine(pos, pos + new Vector3(0, .2f, 0) * CellSize);
                     }
                 }

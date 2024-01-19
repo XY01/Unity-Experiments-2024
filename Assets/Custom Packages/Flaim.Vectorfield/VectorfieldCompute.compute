@@ -107,5 +107,7 @@ void Update (uint3 id : SV_DispatchThreadID)
     Diffuse(id, index);
 
     if(AdvectionTimestep > 0)
-        Advect(id, index); 
+        Advect(id, index);
+
+    VectorfieldBuffer[index] = lerp(VectorfieldBuffer[index], float3(0, 0, 0), DeltaTime * 0.1);
 }
