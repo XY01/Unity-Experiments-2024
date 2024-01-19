@@ -2736,8 +2736,8 @@ MonoBehaviour:
         Culture=neutral, PublicKeyToken=null
   m_Direction: 1
   m_LinkedSlots:
-  - {fileID: 137}
   - {fileID: 203}
+  - {fileID: 137}
 --- !u!114 &195
 MonoBehaviour:
   m_ObjectHideFlags: 0

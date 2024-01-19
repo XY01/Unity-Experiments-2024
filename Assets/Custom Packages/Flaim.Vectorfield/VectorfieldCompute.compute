@@ -1,0 +1,110 @@
+// VectorFieldComputeShader.compute
+#pragma kernel Update
+
+// The number of threads per group in each dimension
+#define THREAD_X 8
+#define THREAD_Y 8
+#define THREAD_Z 8
+#define PI 3.1416
+
+// The buffer to write the vector field to
+RWStructuredBuffer<float3> VectorfieldBuffer;
+
+// The dimensions of the vector field
+uint3 Dimensions;
+
+float DeltaTime; // Time step for diffusion
+float DiffusionRate; // Rate at which the vectors diffuse
+
+float InfluenceNormalizedPosition; // Position of the input velocity
+float InfluenceRadius; // Radius of influence for the input velocity
+float3 InfluenceVelocity; // Velocity of the input velocity
+
+
+uint GetIndex(int3 gridPos)
+{
+    return gridPos.x + gridPos.y * Dimensions.x + gridPos.z * Dimensions.x * Dimensions.y;
+}
+
+// Function to add velocity influence at a position
+void AddInfluence(int3 inputGridPos, float3 inputVel, float inputRadius)
+{
+    for (int z = -inputRadius; z <= inputRadius; z++)
+    {
+        for (int y = -inputRadius; y <= inputRadius; y++)
+        {
+            for (int x = -inputRadius; x <= inputRadius; x++)
+            {
+                int3 index3D = inputGridPos + int3(x, y, z);
+
+                // Check if the index is within the bounds of the vector field
+                if (index3D.x >= 0 && index3D.x < Dimensions.x &&
+                    index3D.y >= 0 && index3D.y < Dimensions.y &&
+                    index3D.z >= 0 && index3D.z < Dimensions.z)
+                {
+                    uint vecIndex = GetIndex(index3D);
+
+                    inputVel = normalize(inputVel);
+                    
+                    VectorfieldBuffer[vecIndex] += inputVel;
+                }
+            }
+        }
+    }
+}
+
+void Diffuse(uint3 id)
+{
+    // Implementing a basic diffusion step
+    float3 cellPos = float3(id.x, id.y, id.z);
+    float3 sumVelocity = 0;
+    float neighborCount = 0;
+
+    // Sum velocities from neighboring cells
+    for (int i = -1; i <= 1; i++)
+    {
+        for (int j = -1; j <= 1; j++)
+        {
+            for (int k = -1; k <= 1; k++)
+            {
+                float3 neighborPos = cellPos + float3(i, j, k);
+                if (neighborPos.x >= 0 && neighborPos.x < Dimensions.x &&
+                    neighborPos.y >= 0 && neighborPos.y < Dimensions.y &&
+                    neighborPos.z >= 0 && neighborPos.z < Dimensions.z)
+                {
+                    sumVelocity += VectorfieldBuffer[GetIndex(neighborPos)];
+                    neighborCount += 1;
+                }
+            }
+        }
+    }
+   
+    // Update the velocity with the average of the neighbors
+    float3 velocity = VectorfieldBuffer[GetIndex(cellPos)];
+    VectorfieldBuffer[ GetIndex(cellPos)] = lerp(velocity, sumVelocity / neighborCount, DiffusionRate * DeltaTime);
+}
+
+
+[numthreads(THREAD_X, THREAD_Y, THREAD_Z)]
+void Update (uint3 id : SV_DispatchThreadID)
+{
+    InfluenceNormalizedPosition = saturate(InfluenceNormalizedPosition);
+    // Check input influence
+    uint3 inputGridPos = InfluenceNormalizedPosition * Dimensions;      
+    if( //id.x > inputGridPos.x - InfluenceRadius && id.x < inputGridPos.x + InfluenceRadius &&
+        //id.y > inputGridPos.y - InfluenceRadius && id.y < inputGridPos.y + InfluenceRadius &&
+        id.z > inputGridPos.z - InfluenceRadius && id.z < inputGridPos.z + InfluenceRadius)
+    {
+        // get single dimension index
+        
+        
+        uint index = GetIndex(id);
+        VectorfieldBuffer[index] += float3(0,4 * DeltaTime,0);
+    }
+    
+    //Diffuse(id);
+    //AddInfluence(inputGridPos, InfluenceVelocity, InfluenceRadius);   
+}
+
+
+
