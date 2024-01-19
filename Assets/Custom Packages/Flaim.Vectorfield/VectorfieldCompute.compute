@@ -11,49 +11,35 @@
 RWStructuredBuffer<float3> VectorfieldBuffer;
 
 // The dimensions of the vector field
-uint3 Dimensions;
+uint3 GridDimensions;
+float CellSize;
 
 float DeltaTime; // Time step for diffusion
 float DiffusionRate; // Rate at which the vectors diffuse
+float AdvectionTimestep; // Rate at which the vectors diffuse
 
-float InfluenceNormalizedPosition; // Position of the input velocity
+float3 InfluenceNormalizedPosition; // Position of the input velocity
 float InfluenceRadius; // Radius of influence for the input velocity
 float3 InfluenceVelocity; // Velocity of the input velocity
 
 
-uint GetIndex(int3 gridPos)
+
+
+float3 BoundsMin;
+float3 BoundsSize;
+
+
+uint GetIndex(uint3 gridPos)
 {
-    return gridPos.x + gridPos.y * Dimensions.x + gridPos.z * Dimensions.x * Dimensions.y;
+    gridPos.x = min(gridPos.x, GridDimensions.x - 1);
+    gridPos.y = min(gridPos.y, GridDimensions.y - 1);
+    gridPos.z = min(gridPos.z, GridDimensions.z - 1);
+    return gridPos.x + gridPos.y * GridDimensions.x + gridPos.z * GridDimensions.x * GridDimensions.y;
+    // 10 + 0 + 
 }
 
-// Function to add velocity influence at a position
-void AddInfluence(int3 inputGridPos, float3 inputVel, float inputRadius)
-{
-    for (int z = -inputRadius; z <= inputRadius; z++)
-    {
-        for (int y = -inputRadius; y <= inputRadius; y++)
-        {
-            for (int x = -inputRadius; x <= inputRadius; x++)
-            {
-                int3 index3D = inputGridPos + int3(x, y, z);
 
-                // Check if the index is within the bounds of the vector field
-                if (index3D.x >= 0 && index3D.x < Dimensions.x &&
-                    index3D.y >= 0 && index3D.y < Dimensions.y &&
-                    index3D.z >= 0 && index3D.z < Dimensions.z)
-                {
-                    uint vecIndex = GetIndex(index3D);
-
-                    inputVel = normalize(inputVel);
-                    
-                    VectorfieldBuffer[vecIndex] += inputVel;
-                }
-            }
-        }
-    }
-}
-
-void Diffuse(uint3 id)
+void Diffuse(uint3 id, int index)
 {
     // Implementing a basic diffusion step
     float3 cellPos = float3(id.x, id.y, id.z);
@@ -68,9 +54,9 @@ void Diffuse(uint3 id)
             for (int k = -1; k <= 1; k++)
             {
                 float3 neighborPos = cellPos + float3(i, j, k);
-                if (neighborPos.x >= 0 && neighborPos.x < Dimensions.x &&
-                    neighborPos.y >= 0 && neighborPos.y < Dimensions.y &&
-                    neighborPos.z >= 0 && neighborPos.z < Dimensions.z)
+                if (neighborPos.x >= 0 && neighborPos.x < GridDimensions.x &&
+                    neighborPos.y >= 0 && neighborPos.y < GridDimensions.y &&
+                    neighborPos.z >= 0 && neighborPos.z < GridDimensions.z)
                 {
                     sumVelocity += VectorfieldBuffer[GetIndex(neighborPos)];
                     neighborCount += 1;
@@ -80,31 +66,46 @@ void Diffuse(uint3 id)
     }
    
     // Update the velocity with the average of the neighbors
-    float3 velocity = VectorfieldBuffer[GetIndex(cellPos)];
-    VectorfieldBuffer[ GetIndex(cellPos)] = lerp(velocity, sumVelocity / neighborCount, DiffusionRate * DeltaTime);
+    float3 velocity = VectorfieldBuffer[index];
+    VectorfieldBuffer[index] = lerp(velocity, sumVelocity / neighborCount, DiffusionRate * DeltaTime);
+}
+
+void Advect(uint3 id, int index)
+{
+    // For each cell in the grid, compute the advection
+    // This is a simplified version, real implementation would require interpolation   
+    float3 velocity = VectorfieldBuffer[index];
+    float3 prevPos = id - velocity * AdvectionTimestep;
+    uint backtracePosIndex = GetIndex(uint3(prevPos.x, prevPos.y, prevPos.z));
+    
+    VectorfieldBuffer[index] = lerp(VectorfieldBuffer[index], VectorfieldBuffer[backtracePosIndex], DeltaTime * 4);
 }
 
 
 [numthreads(THREAD_X, THREAD_Y, THREAD_Z)]
 void Update (uint3 id : SV_DispatchThreadID)
 {
-    InfluenceNormalizedPosition = saturate(InfluenceNormalizedPosition);
-    // Check input influence
-    uint3 inputGridPos = InfluenceNormalizedPosition * Dimensions;      
-    if( //id.x > inputGridPos.x - InfluenceRadius && id.x < inputGridPos.x + InfluenceRadius &&
-        //id.y > inputGridPos.y - InfluenceRadius && id.y < inputGridPos.y + InfluenceRadius &&
-        id.z > inputGridPos.z - InfluenceRadius && id.z < inputGridPos.z + InfluenceRadius)
+    // Only do the number of cells defined if the thread count is over
+    if(id.x >= GridDimensions.x || id.y >= GridDimensions.y || id.z >= GridDimensions.z)
     {
-        // get single dimension index
-        
-        
-        uint index = GetIndex(id);
-        VectorfieldBuffer[index] += float3(0,4 * DeltaTime,0);
+        return;
+    }  
+
+    // Get single dimension index from thread id
+    int index = GetIndex(id);
+
+    // Influence from mouse input
+    float3 voxelPos = BoundsMin + float3(id.x, id.y, id.z) * CellSize;
+    float3 inputWorldPos = BoundsMin + InfluenceNormalizedPosition * BoundsSize;
+    float dist = distance(inputWorldPos, voxelPos);
+    
+    if(dist < InfluenceRadius)
+    {
+        VectorfieldBuffer[index] += InfluenceVelocity * (1 - dist / InfluenceRadius) * DeltaTime * 6;
     }
     
-    //Diffuse(id);
-    //AddInfluence(inputGridPos, InfluenceVelocity, InfluenceRadius);   
+    Diffuse(id, index);
+
+    if(AdvectionTimestep > 0)
+        Advect(id, index); 
 }
-
-
-

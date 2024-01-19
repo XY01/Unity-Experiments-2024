@@ -18,10 +18,13 @@ namespace Flaim.Compute
         [SerializeField] private Vector3 WorldDimensions = new Vector3(4,2, 4);
         [SerializeField] private float CellSize = .15f;
 
+        [Header("Influence")]
         [SerializeField] private CameraRaycastPosition InfluenceTransform;
         [SerializeField] private float InfluenceRadius = 1f;
         
-        [SerializeField] private float DiffusionRate = 1f;
+        [Header("Diffusion")]
+        [SerializeField] private float DiffusionRate = 10f;
+        [SerializeField] private float AdvectionTimestep = 15f;
         
         private int _width = 4;
         private int _height = 4;
@@ -33,6 +36,8 @@ namespace Flaim.Compute
         
         [Header("Debug")]
         [SerializeField] private bool DrawVectorPositions = true;
+
+        [SerializeField] private Vector3 debugGridPos;
 
         void Start()
         {
@@ -61,14 +66,21 @@ namespace Flaim.Compute
             // Init data
             Vector3[] vectorFieldData = new Vector3[totalSize];
             for (int i = 0; i < totalSize; i++)
-                vectorFieldData[i] = new Vector3(0, 1, 0);
+                vectorFieldData[i] = new Vector3(0, 0, 0);
             _vectorFieldBuffer.SetData(vectorFieldData);
             
             // ----------------- Compute Shader -----------------
             //
             // Set the buffer and dimensions in the compute shader
             VectorFieldShader.SetBuffer(_updateHandle, "VectorfieldBuffer", _vectorFieldBuffer);
-            VectorFieldShader.SetInts("Dimensions", new int[] { _width, _height, _depth });
+          
+            // Set constants
+            VectorFieldShader.SetInts("GridDimensions", new int[] { _width, _height, _depth });
+            VectorFieldShader.SetVector("BoundsMin", transform.position - WorldDimensions * .5f);
+            VectorFieldShader.SetVector("BoundsSize", WorldDimensions);
+            
+            
+            VectorFieldShader.SetFloat("CellSize", WorldDimensions.x / (float)_width);
             //vectorFieldShader.SetVector("Dimensions", new Vector3( width, height, depth ));
             // Set thread counts
             _threadCount = new int3(
@@ -78,7 +90,7 @@ namespace Flaim.Compute
 
             // ----------------- Visual Effect -----------------
             //
-            VisualEffect.SetVector3("CellDimensions", new Vector3(_width, _height, _depth));
+            VisualEffect.SetVector3("GridDimensions", new Vector3(_width, _height, _depth));
             VisualEffect.SetVector3("WorldDimensions", WorldDimensions);
             // Set the buffer for the visual effect
             VisualEffect.SetGraphicsBuffer("VectorfieldBuffer", _vectorFieldBuffer);
@@ -95,14 +107,22 @@ namespace Flaim.Compute
             VectorFieldShader.SetFloat("DeltaTime", Time.deltaTime);
             // Diffusion
             VectorFieldShader.SetFloat("DiffusionRate", DiffusionRate);
+            VectorFieldShader.SetFloat("AdvectionTimestep", AdvectionTimestep);
             // Influence
             Vector3 normalizedInfluencePos = WorldToLocalPosition(InfluenceTransform.transform.position);
             VectorFieldShader.SetFloat("InfluenceRadius", InfluenceRadius);
             VectorFieldShader.SetVector("InfluenceNormalizedPosition", normalizedInfluencePos);
             VectorFieldShader.SetVector("InfluenceVelocity", InfluenceTransform.Velocity);
-            
+
             // Dispatch the compute shader
             VectorFieldShader.Dispatch(_updateHandle, _threadCount.x, _threadCount.y, _threadCount.z);
+            
+            //Debug.Log("normalizedInfluencePos: " + normalizedInfluencePos);
+        }
+        
+        uint GetIndex(Vector3 gridPos)
+        {
+            return (uint)(gridPos.x + gridPos.y * _width + gridPos.z * _width * _height);
         }
         
         Vector3 WorldToLocalPosition(Vector3 worldPosition)
@@ -116,6 +136,17 @@ namespace Flaim.Compute
 
             return normalized;
         }
+        
+        Vector3 WorldToGridPos(Vector3 worldPosition)
+        {
+            Vector3 local = transform.InverseTransformPoint(InfluenceTransform.transform.position);
+            local += WorldDimensions * .5f;
+            local.x = Mathf.Floor(local.x);
+            local.y = Mathf.Floor(local.y);
+            local.z = Mathf.Floor(local.z);
+            return local;
+        }
+        
         
 
         void OnDestroy()
