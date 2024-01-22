@@ -14,6 +14,7 @@ namespace Flaim.Utils
         public float smoothing = 10f; // Smoothing factor for movement
         private Vector3 previousPosition; // To store the previous position
         public Vector3 Velocity { get; private set; } // The velocity of the transform
+        public bool DisableOnMouseUp = true;
 
         void Start()
         {
@@ -23,20 +24,32 @@ namespace Flaim.Utils
 
         void Update()
         {
+            if (Input.GetMouseButtonDown(0))
+            {
+                RaycastFromCameraToWorld(false);
+                Velocity = Vector3.zero;
+                previousPosition = transform.position; 
+            }
+            
+            if (Input.GetMouseButtonUp(0) && DisableOnMouseUp)
+            {
+                Velocity = Vector3.zero;
+                transform.position = Vector3.one * 600;
+                previousPosition = transform.position; 
+            }
+            
             // Check if the left mouse button is clicked
             if (Input.GetMouseButton(0))
             {
-                RaycastFromCameraToWorld();
+                RaycastFromCameraToWorld(true);
+                // Calculate velocity
+                Velocity = (transform.position - previousPosition) / Time.deltaTime;
+                // Update the previous position
+                previousPosition = transform.position;
             }
-
-            // Calculate velocity
-            Velocity = (transform.position - previousPosition) / Time.deltaTime;
-
-            // Update the previous position
-            previousPosition = transform.position;
         }
 
-        private void RaycastFromCameraToWorld()
+        private void RaycastFromCameraToWorld(bool useSmoothing = true)
         {
             // Get the main camera
             Camera camera = Camera.main;
@@ -49,7 +62,9 @@ namespace Flaim.Utils
             if (Physics.Raycast(ray, out hit))
             {
                 // Set the transform position to the hit point with smoothing
-                transform.position = Vector3.Lerp(transform.position, hit.point, smoothing * Time.deltaTime);
+                transform.position = useSmoothing
+                    ? Vector3.Lerp(transform.position, hit.point, smoothing * Time.deltaTime)
+                    : hit.point;
             }
         }
 

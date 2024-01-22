@@ -16,7 +16,8 @@ float CellSize;
 
 float DeltaTime; // Time step for diffusion
 float DiffusionRate; // Rate at which the vectors diffuse
-float AdvectionTimestep; // Rate at which the vectors diffuse
+float AdvectionTimestep; // Time step for advection
+float AdvectionSmoothing; // Rate at which the vectors advect
 
 float3 InfluenceNormalizedPosition; // Position of the input velocity
 float InfluenceRadius; // Radius of influence for the input velocity
@@ -70,6 +71,7 @@ void Diffuse(uint3 id, int index)
     VectorfieldBuffer[index] = lerp(velocity, sumVelocity / neighborCount, DiffusionRate * DeltaTime);
 }
 
+// TO DO: Advection may need revisiting to get the desired effect
 void Advect(uint3 id, int index)
 {
     // For each cell in the grid, compute the advection
@@ -78,7 +80,23 @@ void Advect(uint3 id, int index)
     float3 prevPos = id - velocity * AdvectionTimestep;
     uint backtracePosIndex = GetIndex(uint3(prevPos.x, prevPos.y, prevPos.z));
     
-    VectorfieldBuffer[index] = lerp(VectorfieldBuffer[index], VectorfieldBuffer[backtracePosIndex], DeltaTime * 4);
+    VectorfieldBuffer[index] = lerp(VectorfieldBuffer[index], VectorfieldBuffer[backtracePosIndex], DeltaTime * AdvectionSmoothing);
+}
+
+void Project(uint3 id, int index)
+{
+    // This is a simplified pressure projection step
+    // A real implementation would solve a pressure Poisson equation
+    float3 cellPos = float3(id.x, id.y, id.z);
+    float3 gradient = 0;
+
+    // Calculate gradient of pressure
+    int rightIndex = GetIndex(cellPos + float3(1, 0, 0));
+    int topIndex = GetIndex(cellPos + float3(0, 0, 1));
+    gradient.x = VectorfieldBuffer[rightIndex].x - VectorfieldBuffer[index].x;
+    gradient.z = VectorfieldBuffer[topIndex].z - VectorfieldBuffer[index].z;
+
+    VectorfieldBuffer[index] -= gradient * DeltaTime;
 }
 
 
@@ -108,6 +126,8 @@ void Update (uint3 id : SV_DispatchThreadID)
 
     if(AdvectionTimestep > 0)
         Advect(id, index);
+
+    Project(id, index);
 
     VectorfieldBuffer[index] = lerp(VectorfieldBuffer[index], float3(0, 0, 0), DeltaTime * 0.1);
 }
