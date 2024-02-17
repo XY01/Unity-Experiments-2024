@@ -22,10 +22,12 @@ namespace Flaim.Compute
         [Header("Influence")]
         [SerializeField] private CameraRaycastPosition InfluenceTransform;
         [SerializeField] private float InfluenceRadius = 1f;
+        [SerializeField] private Vector3 InfluenceVelocityOverride = Vector3.zero;
         
         [Header("Diffusion")]
         [SerializeField] private float DiffusionRate = 10f;
         [SerializeField] private float AdvectionTimestep = 15f;
+        [SerializeField] private float AdvectionSmoothing = 4;
         
         private int _width = 4;
         private int _height = 4;
@@ -37,8 +39,9 @@ namespace Flaim.Compute
         
         [Header("Debug")]
         [SerializeField] private bool DrawVectorPositions = true;
-
         [SerializeField] private Vector3 debugGridPos;
+        
+     
 
         void Start()
         {
@@ -112,12 +115,16 @@ namespace Flaim.Compute
             VectorFieldShader.SetFloat("DeltaTime", Time.deltaTime);
             // Diffusion
             VectorFieldShader.SetFloat("DiffusionRate", DiffusionRate);
+            // Advection
             VectorFieldShader.SetFloat("AdvectionTimestep", AdvectionTimestep);
+            VectorFieldShader.SetFloat("AdvectionSmoothing", AdvectionSmoothing);
             // Influence
             Vector3 normalizedInfluencePos = WorldToLocalPosition(InfluenceTransform.transform.position);
+            Vector3 velocity = InfluenceVelocityOverride != Vector3.zero ? InfluenceVelocityOverride : InfluenceTransform.Velocity;
             VectorFieldShader.SetFloat("InfluenceRadius", InfluenceRadius);
             VectorFieldShader.SetVector("InfluenceNormalizedPosition", normalizedInfluencePos);
-            VectorFieldShader.SetVector("InfluenceVelocity", InfluenceTransform.Velocity);
+            // Velocity
+            VectorFieldShader.SetVector("InfluenceVelocity", velocity);
 
             // Dispatch the compute shader
             VectorFieldShader.Dispatch(_updateHandle, _threadCount.x, _threadCount.y, _threadCount.z);
